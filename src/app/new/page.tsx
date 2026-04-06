@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { usePlanner, BLOCK_COLORS } from "@/components/PlannerContext";
+import { usePlanner, BLOCK_COLORS, isValidTime } from "@/components/PlannerContext";
 
 type ItemType = "task" | "note" | "time-block";
 
@@ -35,6 +35,7 @@ export default function NewPage() {
   const [time, setTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [color, setColor] = useState("blue");
+  const [error, setError] = useState("");
 
   function handleTimeInput(value: string, setter: (v: string) => void) {
     // Strip non-digits
@@ -48,14 +49,30 @@ export default function NewPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      setError("Please enter a description.");
+      return;
+    }
+    setError("");
 
     if (type === "task") {
       addTask(date, text.trim());
     } else if (type === "note") {
       addNote(date, text.trim());
     } else {
-      if (!time.trim() || !endTime.trim()) return;
+      if (!time.trim() || !endTime.trim()) {
+        setError("Please enter both start and end times.");
+        return;
+      }
+      if (!isValidTime(time) || !isValidTime(endTime)) {
+        setError("Please enter valid times (00:00 – 23:59).");
+        return;
+      }
+      if (endTime <= time) {
+        setError("End time must be after start time.");
+        return;
+      }
+      setError("");
       addTimeBlock(date, time.trim(), endTime.trim(), text.trim(), color);
     }
 
@@ -204,6 +221,11 @@ export default function NewPage() {
               className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </div>
+
+          {/* Error */}
+          {error && (
+            <p className="text-center text-sm text-muted-foreground">{error}</p>
+          )}
 
           {/* Submit */}
           <button

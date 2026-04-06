@@ -39,8 +39,14 @@ interface PlannerState {
   schedule: TimeBlock[];
   toggleTask: (id: number) => void;
   addTask: (date: string, text: string) => void;
+  editTask: (id: number, text: string) => void;
+  deleteTask: (id: number) => void;
   addNote: (date: string, text: string) => void;
+  editNote: (id: number, text: string) => void;
+  deleteNote: (id: number) => void;
   addTimeBlock: (date: string, time: string, endTime: string, label: string, color: string) => void;
+  editTimeBlock: (id: number, time: string, endTime: string, label: string, color: string) => void;
+  deleteTimeBlock: (id: number) => void;
 }
 
 const PlannerContext = createContext<PlannerState | null>(null);
@@ -81,7 +87,7 @@ const seedSchedule: TimeBlock[] = [
   { id: 3, date: today, time: "10:45", endTime: "12:30", label: "Work on planner project", color: "violet" },
   { id: 4, date: today, time: "12:30", endTime: "13:30", label: "Lunch with Alex", color: "amber" },
   { id: 5, date: today, time: "14:00", endTime: "16:00", label: "Study session — library", color: "slate" },
-  { id: 6, date: today, time: "16:00", endTime: "17:00", label: "Team meeting (Zoom)", color: "rose" },
+  { id: 6, date: today, time: "15:00", endTime: "16:00", label: "Team meeting (Zoom)", color: "rose" },
   { id: 7, date: today, time: "18:00", endTime: "19:00", label: "Dinner & free time", color: "amber" },
   { id: 8, date: today, time: "20:00", endTime: "21:30", label: "Reading / wind down", color: "emerald" },
 ];
@@ -102,6 +108,15 @@ function normalizeTime(raw: string): string {
     return `${String(h).padStart(2, "0")}:${m}`;
   }
   return raw;
+}
+
+// Check if a "HH:mm" string is a valid 24h time
+export function isValidTime(time: string): boolean {
+  const match = time.match(/^(\d{2}):(\d{2})$/);
+  if (!match) return false;
+  const h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+  return h >= 0 && h <= 23 && m >= 0 && m <= 59;
 }
 
 // Convert "HH:mm" to minutes since midnight for sorting
@@ -126,8 +141,24 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     setTasks((prev) => [...prev, { id: nextId++, date, text, done: false }]);
   }, []);
 
+  const editTask = useCallback((id: number, text: string) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, text } : t)));
+  }, []);
+
+  const deleteTask = useCallback((id: number) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   const addNote = useCallback((date: string, text: string) => {
     setNotes((prev) => [...prev, { id: nextId++, date, text }]);
+  }, []);
+
+  const editNote = useCallback((id: number, text: string) => {
+    setNotes((prev) => prev.map((n) => (n.id === id ? { ...n, text } : n)));
+  }, []);
+
+  const deleteNote = useCallback((id: number) => {
+    setNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   const addTimeBlock = useCallback((date: string, time: string, endTime: string, label: string, color: string) => {
@@ -140,8 +171,21 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const editTimeBlock = useCallback((id: number, time: string, endTime: string, label: string, color: string) => {
+    const normStart = normalizeTime(time);
+    const normEnd = normalizeTime(endTime);
+    setSchedule((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, time: normStart, endTime: normEnd, label, color } : b))
+        .sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time))
+    );
+  }, []);
+
+  const deleteTimeBlock = useCallback((id: number) => {
+    setSchedule((prev) => prev.filter((b) => b.id !== id));
+  }, []);
+
   return (
-    <PlannerContext.Provider value={{ tasks, notes, schedule, toggleTask, addTask, addNote, addTimeBlock }}>
+    <PlannerContext.Provider value={{ tasks, notes, schedule, toggleTask, addTask, editTask, deleteTask, addNote, editNote, deleteNote, addTimeBlock, editTimeBlock, deleteTimeBlock }}>
       {children}
     </PlannerContext.Provider>
   );
