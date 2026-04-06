@@ -117,7 +117,7 @@ export default function WeekPage() {
                       key={s.id}
                       className="truncate text-[11px] leading-snug text-muted-foreground"
                     >
-                      <span className="font-medium text-accent">{s.time}</span>{" "}
+                      <span className="font-medium text-accent">{s.time}–{s.endTime}</span>{" "}
                       {s.label}
                     </p>
                   ))}
@@ -198,7 +198,7 @@ export default function WeekPage() {
                       key={s.id}
                       className="truncate text-xs text-muted-foreground"
                     >
-                      <span className="font-medium text-accent">{s.time}</span>{" "}
+                      <span className="font-medium text-accent">{s.time}–{s.endTime}</span>{" "}
                       {s.label}
                     </p>
                   ))}

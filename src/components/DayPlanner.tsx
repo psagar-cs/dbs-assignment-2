@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePlanner } from "./PlannerContext";
+import { usePlanner, timeToMinutes } from "./PlannerContext";
+import type { TimeBlock } from "./PlannerContext";
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", {
@@ -28,6 +29,42 @@ function addDays(date: Date, days: number): Date {
   return result;
 }
 
+const COLOR_STYLES: Record<string, { bg: string; border: string; text: string; time: string }> = {
+  amber:   { bg: "bg-amber-50",   border: "border-l-amber-400",   text: "text-amber-900",   time: "text-amber-600" },
+  blue:    { bg: "bg-blue-50",    border: "border-l-blue-400",    text: "text-blue-900",    time: "text-blue-600" },
+  emerald: { bg: "bg-emerald-50", border: "border-l-emerald-400", text: "text-emerald-900", time: "text-emerald-600" },
+  rose:    { bg: "bg-rose-50",    border: "border-l-rose-400",    text: "text-rose-900",    time: "text-rose-600" },
+  violet:  { bg: "bg-violet-50",  border: "border-l-violet-400",  text: "text-violet-900",  time: "text-violet-600" },
+  slate:   { bg: "bg-stone-100",  border: "border-l-stone-400",   text: "text-stone-900",   time: "text-stone-500" },
+};
+
+function getBlockStyle(color: string) {
+  return COLOR_STYLES[color] || COLOR_STYLES.slate;
+}
+
+function TimelineBlock({ block, startHour, endHour }: { block: TimeBlock; startHour: number; endHour: number }) {
+  const totalMinutes = (endHour - startHour) * 60;
+  const blockStart = timeToMinutes(block.time) - startHour * 60;
+  const blockEnd = timeToMinutes(block.endTime) - startHour * 60;
+  const top = (blockStart / totalMinutes) * 100;
+  const height = ((blockEnd - blockStart) / totalMinutes) * 100;
+  const style = getBlockStyle(block.color);
+
+  return (
+    <div
+      className={`absolute left-16 right-3 rounded-lg border-l-4 px-3 py-2 transition-shadow hover:shadow-md ${style.bg} ${style.border}`}
+      style={{ top: `${top}%`, height: `${height}%`, minHeight: "28px" }}
+    >
+      <p className={`text-xs font-semibold leading-tight ${style.text}`}>
+        {block.label}
+      </p>
+      <p className={`mt-0.5 text-[11px] tabular-nums ${style.time}`}>
+        {block.time} – {block.endTime}
+      </p>
+    </div>
+  );
+}
+
 export default function DayPlanner({ date }: { date: Date }) {
   const { tasks, notes, schedule, toggleTask } = usePlanner();
 
@@ -39,6 +76,18 @@ export default function DayPlanner({ date }: { date: Date }) {
 
   const prevDay = toDateString(addDays(date, -1));
   const nextDay = toDateString(addDays(date, 1));
+
+  // Compute timeline bounds from schedule
+  let startHour = 7;
+  let endHour = 22;
+  if (daySchedule.length > 0) {
+    const earliest = Math.min(...daySchedule.map((b) => timeToMinutes(b.time)));
+    const latest = Math.max(...daySchedule.map((b) => timeToMinutes(b.endTime)));
+    startHour = Math.floor(earliest / 60);
+    endHour = Math.ceil(latest / 60);
+    if (endHour === startHour) endHour = startHour + 1;
+  }
+  const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
 
   return (
     <div className="min-h-screen bg-background">
@@ -171,7 +220,7 @@ export default function DayPlanner({ date }: { date: Date }) {
             )}
           </section>
 
-          {/* Schedule */}
+          {/* Schedule — Visual Timeline */}
           <section className="lg:col-span-2">
             <h2 className="mb-5 text-sm font-semibold uppercase tracking-widest text-muted">
               Schedule
@@ -179,19 +228,32 @@ export default function DayPlanner({ date }: { date: Date }) {
             {daySchedule.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted">No time blocks yet</p>
             ) : (
-              <div className="overflow-hidden rounded-xl border border-border bg-surface">
-                <ul className="divide-y divide-border">
-                  {daySchedule.map((block) => (
-                    <li key={block.id} className="flex items-center gap-5 px-5 py-4">
-                      <span className="w-20 shrink-0 text-xs font-semibold uppercase tracking-wide text-accent">
-                        {block.time}
+              <div className="rounded-xl border border-border bg-surface">
+                <div className="relative my-3" style={{ height: `${hours.length * 64}px` }}>
+                  {/* Hour grid lines */}
+                  {hours.map((hour, i) => (
+                    <div
+                      key={hour}
+                      className="absolute left-0 right-0 flex items-center"
+                      style={{ top: `${(i / hours.length) * 100}%`, transform: "translateY(-50%)" }}
+                    >
+                      <span className="w-14 shrink-0 pl-4 text-[11px] font-medium tabular-nums text-muted">
+                        {String(hour).padStart(2, "0")}:00
                       </span>
-                      <span className="text-sm text-foreground">
-                        {block.label}
-                      </span>
-                    </li>
+                      <div className="flex-1 border-t border-border" />
+                    </div>
                   ))}
-                </ul>
+
+                  {/* Time blocks */}
+                  {daySchedule.map((block) => (
+                    <TimelineBlock
+                      key={block.id}
+                      block={block}
+                      startHour={startHour}
+                      endHour={endHour}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </section>

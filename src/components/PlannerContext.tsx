@@ -19,8 +19,19 @@ export interface TimeBlock {
   id: number;
   date: string;
   time: string;
+  endTime: string;
   label: string;
+  color: string;
 }
+
+export const BLOCK_COLORS = [
+  { name: "Amber", value: "amber" },
+  { name: "Blue", value: "blue" },
+  { name: "Emerald", value: "emerald" },
+  { name: "Rose", value: "rose" },
+  { name: "Violet", value: "violet" },
+  { name: "Slate", value: "slate" },
+];
 
 interface PlannerState {
   tasks: Task[];
@@ -29,7 +40,7 @@ interface PlannerState {
   toggleTask: (id: number) => void;
   addTask: (date: string, text: string) => void;
   addNote: (date: string, text: string) => void;
-  addTimeBlock: (date: string, time: string, label: string) => void;
+  addTimeBlock: (date: string, time: string, endTime: string, label: string, color: string) => void;
 }
 
 const PlannerContext = createContext<PlannerState | null>(null);
@@ -65,24 +76,22 @@ const seedNotes: Note[] = [
 ];
 
 const seedSchedule: TimeBlock[] = [
-  { id: 1, date: today, time: "08:00", label: "Morning workout" },
-  { id: 2, date: today, time: "09:30", label: "MPCS 51238 lecture" },
-  { id: 3, date: today, time: "11:00", label: "Work on planner project" },
-  { id: 4, date: today, time: "12:30", label: "Lunch with Alex" },
-  { id: 5, date: today, time: "14:00", label: "Study session — library" },
-  { id: 6, date: today, time: "16:00", label: "Team meeting (Zoom)" },
-  { id: 7, date: today, time: "18:00", label: "Dinner & free time" },
-  { id: 8, date: today, time: "20:00", label: "Reading / wind down" },
+  { id: 1, date: today, time: "07:00", endTime: "08:00", label: "Morning workout", color: "emerald" },
+  { id: 2, date: today, time: "09:00", endTime: "10:30", label: "MPCS 51238 lecture", color: "blue" },
+  { id: 3, date: today, time: "10:45", endTime: "12:30", label: "Work on planner project", color: "violet" },
+  { id: 4, date: today, time: "12:30", endTime: "13:30", label: "Lunch with Alex", color: "amber" },
+  { id: 5, date: today, time: "14:00", endTime: "16:00", label: "Study session — library", color: "slate" },
+  { id: 6, date: today, time: "16:00", endTime: "17:00", label: "Team meeting (Zoom)", color: "rose" },
+  { id: 7, date: today, time: "18:00", endTime: "19:00", label: "Dinner & free time", color: "amber" },
+  { id: 8, date: today, time: "20:00", endTime: "21:30", label: "Reading / wind down", color: "emerald" },
 ];
 
 // Normalize any time string to 24h "HH:mm" format
 function normalizeTime(raw: string): string {
-  // Already in "HH:mm" 24h format
   const mil = raw.match(/^(\d{1,2}):(\d{2})$/);
   if (mil) {
     return `${String(parseInt(mil[1], 10)).padStart(2, "0")}:${mil[2]}`;
   }
-  // "h:mm AM/PM" format
   const ampm = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (ampm) {
     let h = parseInt(ampm[1], 10);
@@ -96,7 +105,7 @@ function normalizeTime(raw: string): string {
 }
 
 // Convert "HH:mm" to minutes since midnight for sorting
-function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
   const match = time.match(/^(\d{1,2}):(\d{2})$/);
   if (!match) return 0;
   return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
@@ -121,10 +130,11 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     setNotes((prev) => [...prev, { id: nextId++, date, text }]);
   }, []);
 
-  const addTimeBlock = useCallback((date: string, time: string, label: string) => {
-    const normalized = normalizeTime(time);
+  const addTimeBlock = useCallback((date: string, time: string, endTime: string, label: string, color: string) => {
+    const normStart = normalizeTime(time);
+    const normEnd = normalizeTime(endTime);
     setSchedule((prev) =>
-      [...prev, { id: nextId++, date, time: normalized, label }].sort(
+      [...prev, { id: nextId++, date, time: normStart, endTime: normEnd, label, color }].sort(
         (a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)
       )
     );

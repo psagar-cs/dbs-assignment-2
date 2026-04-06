@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { usePlanner } from "@/components/PlannerContext";
+import { usePlanner, BLOCK_COLORS } from "@/components/PlannerContext";
 
 type ItemType = "task" | "note" | "time-block";
 
@@ -15,6 +15,15 @@ function todayString(): string {
   return `${y}-${m}-${day}`;
 }
 
+const COLOR_DOT: Record<string, string> = {
+  amber: "bg-amber-400",
+  blue: "bg-blue-400",
+  emerald: "bg-emerald-400",
+  rose: "bg-rose-400",
+  violet: "bg-violet-400",
+  slate: "bg-stone-400",
+};
+
 export default function NewPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -24,6 +33,18 @@ export default function NewPage() {
   const [date, setDate] = useState(searchParams.get("date") || todayString());
   const [text, setText] = useState("");
   const [time, setTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [color, setColor] = useState("blue");
+
+  function handleTimeInput(value: string, setter: (v: string) => void) {
+    // Strip non-digits
+    const digits = value.replace(/\D/g, "").slice(0, 4);
+    if (digits.length <= 2) {
+      setter(digits);
+    } else {
+      setter(`${digits.slice(0, 2)}:${digits.slice(2)}`);
+    }
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,8 +55,8 @@ export default function NewPage() {
     } else if (type === "note") {
       addNote(date, text.trim());
     } else {
-      if (!time.trim()) return;
-      addTimeBlock(date, time.trim(), text.trim());
+      if (!time.trim() || !endTime.trim()) return;
+      addTimeBlock(date, time.trim(), endTime.trim(), text.trim(), color);
     }
 
     router.push(date === todayString() ? "/" : `/day/${date}`);
@@ -103,19 +124,64 @@ export default function NewPage() {
             />
           </div>
 
-          {/* Time (only for time blocks) */}
+          {/* Time fields (only for time blocks) */}
           {type === "time-block" && (
-            <div>
-              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted">
-                Time
-              </label>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/20"
-              />
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted">
+                    Start time
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={time}
+                    onChange={(e) => handleTimeInput(e.target.value, setTime)}
+                    placeholder="HH:mm"
+                    maxLength={5}
+                    className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm tabular-nums text-foreground outline-none transition-all placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted">
+                    End time
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={endTime}
+                    onChange={(e) => handleTimeInput(e.target.value, setEndTime)}
+                    placeholder="HH:mm"
+                    maxLength={5}
+                    className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm tabular-nums text-foreground outline-none transition-all placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
+                  />
+                </div>
+              </div>
+
+              {/* Color picker */}
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted">
+                  Color
+                </label>
+                <div className="flex gap-2">
+                  {BLOCK_COLORS.map((c) => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setColor(c.value)}
+                      className={`flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+                        color === c.value
+                          ? "ring-2 ring-offset-2 ring-offset-background ring-foreground/30"
+                          : "hover:scale-110"
+                      }`}
+                      aria-label={c.name}
+                    >
+                      <span className={`block h-5 w-5 rounded-full ${COLOR_DOT[c.value]}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
 
           {/* Text */}
