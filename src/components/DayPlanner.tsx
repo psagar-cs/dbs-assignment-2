@@ -6,7 +6,6 @@ import { usePlanner } from "./PlannerContext";
 function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", {
     weekday: "long",
-    year: "numeric",
     month: "long",
     day: "numeric",
   });
@@ -36,88 +35,109 @@ export default function DayPlanner({ date }: { date: Date }) {
   const dayTasks = tasks.filter((t) => t.date === dateStr);
   const dayNotes = notes.filter((n) => n.date === dateStr);
   const daySchedule = schedule.filter((s) => s.date === dateStr);
+  const doneCount = dayTasks.filter((t) => t.done).length;
 
   const prevDay = toDateString(addDays(date, -1));
   const nextDay = toDateString(addDays(date, 1));
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto max-w-4xl px-6 py-6">
+      <header className="border-b border-border bg-surface">
+        <div className="mx-auto max-w-3xl px-6 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
               <Link
                 href={`/day/${prevDay}`}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-all hover:border-border-strong hover:text-foreground"
                 aria-label="Previous day"
               >
                 &larr;
               </Link>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-                  {isToday(date) ? "Today" : formatDate(date)}
-                </h1>
                 {isToday(date) && (
-                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                    {formatDate(date)}
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">
+                    Today
                   </p>
                 )}
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {formatDate(date)}
+                </h1>
               </div>
               <Link
                 href={`/day/${nextDay}`}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-zinc-200 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-all hover:border-border-strong hover:text-foreground"
                 aria-label="Next day"
               >
                 &rarr;
               </Link>
             </div>
-            <div className="flex items-center gap-4">
+            <nav className="flex items-center gap-5">
+              <Link
+                href="/week"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Week
+              </Link>
               {!isToday(date) && (
                 <Link
                   href="/"
-                  className="text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Today
                 </Link>
               )}
               <Link
                 href={`/new?date=${dateStr}`}
-                className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+                className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
               >
                 + Add
               </Link>
-            </div>
+            </nav>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-8">
-        <div className="grid gap-8 lg:grid-cols-2">
+      <main className="mx-auto max-w-3xl px-6 py-10">
+        <div className="grid gap-10 lg:grid-cols-2">
           {/* Tasks */}
           <section>
-            <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-              Tasks
-            </h2>
+            <div className="mb-5 flex items-baseline justify-between">
+              <h2 className="text-sm font-semibold uppercase tracking-widest text-muted">
+                Tasks
+              </h2>
+              {dayTasks.length > 0 && (
+                <span className="text-xs tabular-nums text-muted">
+                  {doneCount} of {dayTasks.length} done
+                </span>
+              )}
+            </div>
+            {dayTasks.length > 0 && (
+              <div className="mb-4 h-1 overflow-hidden rounded-full bg-border">
+                <div
+                  className="h-full rounded-full bg-accent transition-all duration-500"
+                  style={{ width: `${(doneCount / dayTasks.length) * 100}%` }}
+                />
+              </div>
+            )}
             {dayTasks.length === 0 ? (
-              <p className="text-sm text-zinc-400 dark:text-zinc-500">No tasks for this day.</p>
+              <p className="py-8 text-center text-sm text-muted">No tasks yet</p>
             ) : (
               <ul className="space-y-2">
                 {dayTasks.map((task) => (
                   <li key={task.id}>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800">
+                    <label className="flex cursor-pointer items-center gap-3.5 rounded-xl border border-border bg-surface px-4 py-3.5 transition-all hover:border-border-strong hover:shadow-sm">
                       <input
                         type="checkbox"
                         checked={task.done}
                         onChange={() => toggleTask(task.id)}
-                        className="h-4 w-4 rounded border-zinc-300 accent-zinc-900 dark:border-zinc-600 dark:accent-zinc-50"
                       />
                       <span
-                        className={
+                        className={`text-sm leading-relaxed ${
                           task.done
-                            ? "text-zinc-400 line-through dark:text-zinc-500"
-                            : "text-zinc-800 dark:text-zinc-200"
-                        }
+                            ? "text-muted line-through"
+                            : "text-foreground"
+                        }`}
                       >
                         {task.text}
                       </span>
@@ -130,18 +150,18 @@ export default function DayPlanner({ date }: { date: Date }) {
 
           {/* Notes */}
           <section>
-            <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            <h2 className="mb-5 text-sm font-semibold uppercase tracking-widest text-muted">
               Notes
             </h2>
             {dayNotes.length === 0 ? (
-              <p className="text-sm text-zinc-400 dark:text-zinc-500">No notes for this day.</p>
+              <p className="py-8 text-center text-sm text-muted">No notes yet</p>
             ) : (
-              <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-                <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <div className="overflow-hidden rounded-xl border border-border bg-surface">
+                <ul className="divide-y divide-border">
                   {dayNotes.map((note) => (
                     <li
                       key={note.id}
-                      className="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300"
+                      className="px-5 py-4 text-sm leading-relaxed text-foreground"
                     >
                       {note.text}
                     </li>
@@ -153,20 +173,20 @@ export default function DayPlanner({ date }: { date: Date }) {
 
           {/* Schedule */}
           <section className="lg:col-span-2">
-            <h2 className="mb-4 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            <h2 className="mb-5 text-sm font-semibold uppercase tracking-widest text-muted">
               Schedule
             </h2>
             {daySchedule.length === 0 ? (
-              <p className="text-sm text-zinc-400 dark:text-zinc-500">No time blocks for this day.</p>
+              <p className="py-8 text-center text-sm text-muted">No time blocks yet</p>
             ) : (
-              <div className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-                <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <div className="overflow-hidden rounded-xl border border-border bg-surface">
+                <ul className="divide-y divide-border">
                   {daySchedule.map((block) => (
-                    <li key={block.id} className="flex items-center gap-4 px-4 py-3">
-                      <span className="w-20 shrink-0 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <li key={block.id} className="flex items-center gap-5 px-5 py-4">
+                      <span className="w-20 shrink-0 text-xs font-semibold uppercase tracking-wide text-accent">
                         {block.time}
                       </span>
-                      <span className="text-sm text-zinc-800 dark:text-zinc-200">
+                      <span className="text-sm text-foreground">
                         {block.label}
                       </span>
                     </li>

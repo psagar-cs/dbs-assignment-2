@@ -65,15 +65,42 @@ const seedNotes: Note[] = [
 ];
 
 const seedSchedule: TimeBlock[] = [
-  { id: 1, date: today, time: "8:00 AM", label: "Morning workout" },
-  { id: 2, date: today, time: "9:30 AM", label: "MPCS 51238 lecture" },
-  { id: 3, date: today, time: "11:00 AM", label: "Work on planner project" },
-  { id: 4, date: today, time: "12:30 PM", label: "Lunch with Alex" },
-  { id: 5, date: today, time: "2:00 PM", label: "Study session — library" },
-  { id: 6, date: today, time: "4:00 PM", label: "Team meeting (Zoom)" },
-  { id: 7, date: today, time: "6:00 PM", label: "Dinner & free time" },
-  { id: 8, date: today, time: "8:00 PM", label: "Reading / wind down" },
+  { id: 1, date: today, time: "08:00", label: "Morning workout" },
+  { id: 2, date: today, time: "09:30", label: "MPCS 51238 lecture" },
+  { id: 3, date: today, time: "11:00", label: "Work on planner project" },
+  { id: 4, date: today, time: "12:30", label: "Lunch with Alex" },
+  { id: 5, date: today, time: "14:00", label: "Study session — library" },
+  { id: 6, date: today, time: "16:00", label: "Team meeting (Zoom)" },
+  { id: 7, date: today, time: "18:00", label: "Dinner & free time" },
+  { id: 8, date: today, time: "20:00", label: "Reading / wind down" },
 ];
+
+// Normalize any time string to 24h "HH:mm" format
+function normalizeTime(raw: string): string {
+  // Already in "HH:mm" 24h format
+  const mil = raw.match(/^(\d{1,2}):(\d{2})$/);
+  if (mil) {
+    return `${String(parseInt(mil[1], 10)).padStart(2, "0")}:${mil[2]}`;
+  }
+  // "h:mm AM/PM" format
+  const ampm = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (ampm) {
+    let h = parseInt(ampm[1], 10);
+    const m = ampm[2];
+    const period = ampm[3].toUpperCase();
+    if (period === "AM" && h === 12) h = 0;
+    if (period === "PM" && h !== 12) h += 12;
+    return `${String(h).padStart(2, "0")}:${m}`;
+  }
+  return raw;
+}
+
+// Convert "HH:mm" to minutes since midnight for sorting
+function timeToMinutes(time: string): number {
+  const match = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return 0;
+  return parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+}
 
 let nextId = 100;
 
@@ -95,7 +122,12 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addTimeBlock = useCallback((date: string, time: string, label: string) => {
-    setSchedule((prev) => [...prev, { id: nextId++, date, time, label }]);
+    const normalized = normalizeTime(time);
+    setSchedule((prev) =>
+      [...prev, { id: nextId++, date, time: normalized, label }].sort(
+        (a, b) => timeToMinutes(a.time) - timeToMinutes(b.time)
+      )
+    );
   }, []);
 
   return (

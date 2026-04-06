@@ -48,16 +48,21 @@ export default function NewPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto max-w-xl px-6 py-6">
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-surface">
+        <div className="mx-auto max-w-lg px-6 py-8">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-              Add New
-            </h1>
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">
+                New entry
+              </p>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                Add to your day
+              </h1>
+            </div>
             <Link
               href={date === todayString() ? "/" : `/day/${date}`}
-              className="text-sm font-medium text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               Cancel
             </Link>
@@ -65,8 +70,8 @@ export default function NewPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-6 py-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <main className="mx-auto max-w-lg px-6 py-10">
+        <form onSubmit={handleSubmit} className="space-y-8">
           {/* Type selector */}
           <div className="flex gap-2">
             {typeOptions.map((opt) => (
@@ -74,10 +79,10 @@ export default function NewPage() {
                 key={opt.value}
                 type="button"
                 onClick={() => setType(opt.value)}
-                className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all ${
                   type === opt.value
-                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                    : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                    ? "bg-accent text-white shadow-sm"
+                    : "border border-border bg-surface text-muted-foreground hover:border-border-strong hover:text-foreground"
                 }`}
               >
                 {opt.label}
@@ -87,36 +92,35 @@ export default function NewPage() {
 
           {/* Date */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted">
               Date
             </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </div>
 
           {/* Time (only for time blocks) */}
           {type === "time-block" && (
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted">
                 Time
               </label>
               <input
-                type="text"
+                type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                placeholder="e.g. 2:00 PM"
-                className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+                className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
             </div>
           )}
 
           {/* Text */}
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted">
               {type === "task" ? "Task" : type === "note" ? "Note" : "Description"}
             </label>
             <input
@@ -131,14 +135,14 @@ export default function NewPage() {
                     : "What's happening at this time?"
               }
               autoFocus
-              className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-500"
+              className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </div>
 
           {/* Submit */}
           <button
             type="submit"
-            className="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            className="w-full rounded-full bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110"
           >
             Add {type === "time-block" ? "Time Block" : type === "task" ? "Task" : "Note"}
           </button>
