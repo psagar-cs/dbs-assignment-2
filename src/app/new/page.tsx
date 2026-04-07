@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { usePlanner, BLOCK_COLORS, isValidTime } from "@/components/PlannerContext";
@@ -26,6 +26,14 @@ const COLOR_DOT: Record<string, string> = {
 };
 
 export default function NewPage() {
+  return (
+    <Suspense>
+      <NewPageContent />
+    </Suspense>
+  );
+}
+
+function NewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addTask, addNote, addTimeBlock } = usePlanner();
