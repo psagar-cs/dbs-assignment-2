@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePlanner, timeToMinutes, BLOCK_COLORS, isValidTime } from "./PlannerContext";
-import type { TimeBlock } from "./PlannerContext";
+import type { TimeBlock, Priority } from "./PlannerContext";
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", {
@@ -50,6 +50,18 @@ const COLOR_DOT: Record<string, string> = {
 
 function getBlockStyle(color: string) {
   return COLOR_STYLES[color] || COLOR_STYLES.slate;
+}
+
+const PRIORITY_STYLES: Record<Priority, { border: string; dot: string; label: string }> = {
+  high:   { border: "border-l-rose-400", dot: "bg-rose-400", label: "High" },
+  medium: { border: "border-l-amber-400", dot: "bg-amber-400", label: "Medium" },
+  low:    { border: "border-l-blue-400", dot: "bg-blue-400", label: "Low" },
+  none:   { border: "border-l-stone-300", dot: "", label: "" },
+};
+
+function getCurrentMinutes(): number {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
 }
 
 /* ── Overlap column layout algorithm ── */
@@ -272,7 +284,10 @@ export default function DayPlanner({ date }: { date: Date }) {
   const { tasks, notes, schedule, toggleTask, editTask, deleteTask, editNote, deleteNote, editTimeBlock, deleteTimeBlock } = usePlanner();
 
   const dateStr = toDateString(date);
-  const dayTasks = tasks.filter((t) => t.date === dateStr);
+  const priorityOrder: Record<Priority, number> = { high: 0, medium: 1, low: 2, none: 3 };
+  const dayTasks = tasks
+    .filter((t) => t.date === dateStr)
+    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
   const dayNotes = notes.filter((n) => n.date === dateStr);
   const daySchedule = schedule.filter((s) => s.date === dateStr);
   const doneCount = dayTasks.filter((t) => t.done).length;
@@ -280,9 +295,17 @@ export default function DayPlanner({ date }: { date: Date }) {
   const prevDay = toDateString(addDays(date, -1));
   const nextDay = toDateString(addDays(date, 1));
 
+  // Current time (updates every minute)
+  const [nowMinutes, setNowMinutes] = useState(getCurrentMinutes);
+  useEffect(() => {
+    const id = setInterval(() => setNowMinutes(getCurrentMinutes()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   // Editing state
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editingTaskText, setEditingTaskText] = useState("");
+  const [editingTaskPriority, setEditingTaskPriority] = useState<Priority>("none");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editingNoteText, setEditingNoteText] = useState("");
   const [editingBlock, setEditingBlock] = useState<TimeBlock | null>(null);
@@ -403,60 +426,90 @@ export default function DayPlanner({ date }: { date: Date }) {
                 {dayTasks.map((task) => (
                   <li key={task.id}>
                     {editingTaskId === task.id ? (
-                      <div className="flex items-center gap-2 rounded-xl border border-accent bg-surface px-4 py-2.5">
+                      <div className="space-y-2 rounded-xl border border-accent bg-surface px-4 py-3">
                         <input
                           type="text"
                           value={editingTaskText}
                           onChange={(e) => setEditingTaskText(e.target.value)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && editingTaskText.trim()) {
-                              editTask(task.id, editingTaskText.trim());
+                              editTask(task.id, editingTaskText.trim(), editingTaskPriority);
                               setEditingTaskId(null);
                             }
                             if (e.key === "Escape") setEditingTaskId(null);
                           }}
                           autoFocus
-                          className="flex-1 bg-transparent text-sm text-foreground outline-none"
+                          className="w-full bg-transparent text-sm text-foreground outline-none"
                         />
-                        <button
-                          onClick={() => {
-                            if (editingTaskText.trim()) {
-                              editTask(task.id, editingTaskText.trim());
-                              setEditingTaskId(null);
-                            }
-                          }}
-                          className="text-xs font-semibold text-accent hover:brightness-110"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingTaskId(null)}
-                          className="text-xs font-medium text-muted-foreground hover:text-foreground"
-                        >
-                          Cancel
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <div className="flex flex-1 gap-1">
+                            {(["high", "medium", "low", "none"] as Priority[]).map((p) => (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => setEditingTaskPriority(p)}
+                                className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                  editingTaskPriority === p
+                                    ? "bg-accent/10 text-accent"
+                                    : "text-muted hover:text-muted-foreground"
+                                }`}
+                              >
+                                {p !== "none" && <span className={`inline-block h-1.5 w-1.5 rounded-full ${PRIORITY_STYLES[p].dot}`} />}
+                                {p === "none" ? "None" : PRIORITY_STYLES[p].label}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (editingTaskText.trim()) {
+                                editTask(task.id, editingTaskText.trim(), editingTaskPriority);
+                                setEditingTaskId(null);
+                              }
+                            }}
+                            className="text-xs font-semibold text-accent hover:brightness-110"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingTaskId(null)}
+                            className="text-xs font-medium text-muted-foreground hover:text-foreground"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     ) : (
-                      <div className="group flex items-center gap-3.5 rounded-xl border border-border bg-surface px-4 py-3.5 transition-all hover:border-border-strong hover:shadow-sm">
+                      <div className={`group flex items-center gap-3.5 rounded-xl border-l-[3px] border border-border bg-surface px-4 py-3.5 transition-all hover:border-border-strong hover:shadow-sm ${PRIORITY_STYLES[task.priority].border}`}>
                         <label className="flex flex-1 cursor-pointer items-center gap-3.5">
                           <input
                             type="checkbox"
                             checked={task.done}
                             onChange={() => toggleTask(task.id)}
                           />
-                          <span
-                            className={`text-sm leading-relaxed ${
-                              task.done
-                                ? "text-muted line-through"
-                                : "text-foreground"
-                            }`}
-                          >
-                            {task.text}
-                          </span>
+                          <div className="flex-1">
+                            <span
+                              className={`text-sm leading-relaxed ${
+                                task.done
+                                  ? "text-muted line-through"
+                                  : "text-foreground"
+                              }`}
+                            >
+                              {task.text}
+                            </span>
+                            {task.priority !== "none" && !task.done && (
+                              <span className={`ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                task.priority === "high" ? "bg-rose-50 text-rose-600" :
+                                task.priority === "medium" ? "bg-amber-50 text-amber-600" :
+                                "bg-blue-50 text-blue-600"
+                              }`}>
+                                {PRIORITY_STYLES[task.priority].label}
+                              </span>
+                            )}
+                          </div>
                         </label>
                         <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                           <button
-                            onClick={() => { setEditingTaskId(task.id); setEditingTaskText(task.text); }}
+                            onClick={() => { setEditingTaskId(task.id); setEditingTaskText(task.text); setEditingTaskPriority(task.priority); }}
                             className="rounded-lg px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-background hover:text-foreground"
                           >
                             Edit
@@ -573,6 +626,17 @@ export default function DayPlanner({ date }: { date: Date }) {
                       <div className="flex-1 border-t border-border" />
                     </div>
                   ))}
+
+                  {/* Current time indicator */}
+                  {isToday(date) && nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60 && (
+                    <div
+                      className="absolute left-14 right-0 z-10 flex items-center"
+                      style={{ top: `${((nowMinutes - startHour * 60) / ((endHour - startHour) * 60)) * 100}%`, transform: "translateY(-50%)" }}
+                    >
+                      <div className="h-2.5 w-2.5 rounded-full bg-accent shadow-sm" />
+                      <div className="flex-1 border-t-2 border-accent" />
+                    </div>
+                  )}
 
                   {/* Time blocks */}
                   {daySchedule.map((block) => {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { usePlanner, BLOCK_COLORS, isValidTime } from "@/components/PlannerContext";
+import type { Priority } from "@/components/PlannerContext";
 
 type ItemType = "task" | "note" | "time-block";
 
@@ -35,6 +36,7 @@ export default function NewPage() {
   const [time, setTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [color, setColor] = useState("blue");
+  const [priority, setPriority] = useState<Priority>("none");
   const [error, setError] = useState("");
 
   function handleTimeInput(value: string, setter: (v: string) => void) {
@@ -56,7 +58,7 @@ export default function NewPage() {
     setError("");
 
     if (type === "task") {
-      addTask(date, text.trim());
+      addTask(date, text.trim(), priority);
     } else if (type === "note") {
       addNote(date, text.trim());
     } else {
@@ -140,6 +142,37 @@ export default function NewPage() {
               className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </div>
+
+          {/* Priority (only for tasks) */}
+          {type === "task" && (
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-muted">
+                Priority
+              </label>
+              <div className="flex gap-2">
+                {([
+                  { value: "high" as Priority, label: "High", dot: "bg-rose-400" },
+                  { value: "medium" as Priority, label: "Medium", dot: "bg-amber-400" },
+                  { value: "low" as Priority, label: "Low", dot: "bg-blue-400" },
+                  { value: "none" as Priority, label: "None", dot: "bg-stone-300" },
+                ]).map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setPriority(p.value)}
+                    className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                      priority === p.value
+                        ? "bg-accent text-white shadow-sm"
+                        : "border border-border bg-surface text-muted-foreground hover:border-border-strong hover:text-foreground"
+                    }`}
+                  >
+                    <span className={`inline-block h-2 w-2 rounded-full ${priority === p.value ? "bg-white/70" : p.dot}`} />
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Time fields (only for time blocks) */}
           {type === "time-block" && (

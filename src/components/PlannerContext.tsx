@@ -2,11 +2,14 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
+export type Priority = "high" | "medium" | "low" | "none";
+
 export interface Task {
   id: number;
   date: string;
   text: string;
   done: boolean;
+  priority: Priority;
 }
 
 export interface Note {
@@ -38,8 +41,8 @@ interface PlannerState {
   notes: Note[];
   schedule: TimeBlock[];
   toggleTask: (id: number) => void;
-  addTask: (date: string, text: string) => void;
-  editTask: (id: number, text: string) => void;
+  addTask: (date: string, text: string, priority: Priority) => void;
+  editTask: (id: number, text: string, priority: Priority) => void;
   deleteTask: (id: number) => void;
   addNote: (date: string, text: string) => void;
   editNote: (id: number, text: string) => void;
@@ -68,11 +71,11 @@ function todayString(): string {
 const today = todayString();
 
 const seedTasks: Task[] = [
-  { id: 1, date: today, text: "Review lecture notes for MPCS 51238", done: false },
-  { id: 2, date: today, text: "Push planner project to GitHub", done: true },
-  { id: 3, date: today, text: "Grocery run — milk, eggs, coffee", done: false },
-  { id: 4, date: today, text: "Read chapter 5 of design patterns book", done: false },
-  { id: 5, date: today, text: "Reply to team Slack thread", done: true },
+  { id: 1, date: today, text: "Review lecture notes for MPCS 51238", done: false, priority: "high" },
+  { id: 2, date: today, text: "Push planner project to GitHub", done: true, priority: "medium" },
+  { id: 3, date: today, text: "Grocery run — milk, eggs, coffee", done: false, priority: "low" },
+  { id: 4, date: today, text: "Read chapter 5 of design patterns book", done: false, priority: "none" },
+  { id: 5, date: today, text: "Reply to team Slack thread", done: true, priority: "medium" },
 ];
 
 const seedNotes: Note[] = [
@@ -137,12 +140,12 @@ export function PlannerProvider({ children }: { children: ReactNode }) {
     setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
   }, []);
 
-  const addTask = useCallback((date: string, text: string) => {
-    setTasks((prev) => [...prev, { id: nextId++, date, text, done: false }]);
+  const addTask = useCallback((date: string, text: string, priority: Priority) => {
+    setTasks((prev) => [...prev, { id: nextId++, date, text, done: false, priority }]);
   }, []);
 
-  const editTask = useCallback((id: number, text: string) => {
-    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, text } : t)));
+  const editTask = useCallback((id: number, text: string, priority: Priority) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, text, priority } : t)));
   }, []);
 
   const deleteTask = useCallback((id: number) => {
