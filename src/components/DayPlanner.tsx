@@ -479,7 +479,7 @@ export default function DayPlanner({ date }: { date: Date }) {
                         </div>
                       </div>
                     ) : (
-                      <div className={`group flex items-center gap-3.5 rounded-xl border-l-[3px] border border-border bg-surface px-4 py-3.5 transition-all hover:border-border-strong hover:shadow-sm ${PRIORITY_STYLES[task.priority].border}`}>
+                      <div className={`group flex items-center gap-3.5 rounded-xl border-l-[3px] border border-border bg-surface px-4 py-3.5 transition-all hover:scale-[1.01] hover:shadow-sm ${PRIORITY_STYLES[task.priority].border}`}>
                         <label className="flex flex-1 cursor-pointer items-center gap-3.5">
                           <input
                             type="checkbox"

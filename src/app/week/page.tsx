@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePlanner, timeToMinutes } from "@/components/PlannerContext";
 import type { TimeBlock, Priority } from "@/components/PlannerContext";
@@ -83,31 +84,68 @@ function MiniTimeline({ blocks }: { blocks: TimeBlock[] }) {
 
 export default function WeekPage() {
   const { tasks, notes, schedule } = usePlanner();
+  const [weekOffset, setWeekOffset] = useState(0);
+
   const today = new Date();
   const todayStr = toDateString(today);
-  const days = getWeekDays(today);
 
-  const monthLabel = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  // Shift reference date by weekOffset weeks
+  const refDate = new Date(today);
+  refDate.setDate(refDate.getDate() + weekOffset * 7);
+  const days = getWeekDays(refDate);
+
+  // Label from the week's date range
+  const weekStart = days[0];
+  const weekEnd = days[6];
+  const monthLabel = weekStart.getMonth() === weekEnd.getMonth()
+    ? weekStart.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : `${weekStart.toLocaleDateString("en-US", { month: "short" })} – ${weekEnd.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`;
 
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-surface">
         <div className="mx-auto max-w-5xl px-6 py-8">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">
-                Week overview
-              </p>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                {monthLabel}
-              </h1>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setWeekOffset((w) => w - 1)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-all hover:border-border-strong hover:text-foreground"
+                aria-label="Previous week"
+              >
+                &larr;
+              </button>
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-accent">
+                  {weekOffset === 0 ? "This week" : weekOffset === -1 ? "Last week" : weekOffset === 1 ? "Next week" : "Week overview"}
+                </p>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  {monthLabel}
+                </h1>
+              </div>
+              <button
+                onClick={() => setWeekOffset((w) => w + 1)}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-all hover:border-border-strong hover:text-foreground"
+                aria-label="Next week"
+              >
+                &rarr;
+              </button>
             </div>
-            <Link
-              href="/"
-              className="rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border-strong hover:text-foreground"
-            >
-              Back to today
-            </Link>
+            <div className="flex items-center gap-3">
+              {weekOffset !== 0 && (
+                <button
+                  onClick={() => setWeekOffset(0)}
+                  className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  This week
+                </button>
+              )}
+              <Link
+                href="/"
+                className="rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border-strong hover:text-foreground"
+              >
+                Back to today
+              </Link>
+            </div>
           </div>
         </div>
       </header>
